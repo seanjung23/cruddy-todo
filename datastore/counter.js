@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const sprintf = require('sprintf-js').sprintf;
 
-var counter = 0;
+// var counter = 0;
 
 // Private helper functions ////////////////////////////////////////////////////
 
@@ -27,6 +27,7 @@ const readCounter = (callback) => {
 
 const writeCounter = (count, callback) => {
   var counterString = zeroPaddedNumber(count);
+  console.log('counterFile', exports.counterFile);
   fs.writeFile(exports.counterFile, counterString, (err) => {
     if (err) {
       throw ('error writing counter');
@@ -38,9 +39,24 @@ const writeCounter = (count, callback) => {
 
 // Public API - Fix this function //////////////////////////////////////////////
 
-exports.getNextUniqueId = () => {
-  counter = counter + 1;
-  return zeroPaddedNumber(counter);
+exports.getNextUniqueId = (cb) => {
+  // read from the hard drive counter value
+  // increment the number
+  // write counter
+  // return new counter?
+  readCounter((err, num) => {
+    num++;
+    writeCounter(num, (err, counterString) => {
+      cb(null, counterString);
+    });
+  });
+
+
+
+  // counter = counter + 1;
+  // writeCounter(/*counter, callback*/)
+  // readCounter(/*callback*/);
+  // return zeroPaddedNumber(counter);
 };
 
 
