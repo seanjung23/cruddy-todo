@@ -3,96 +3,58 @@ const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
 
-// var items = {};
+var items = {};
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-  counter.getNextUniqueId((err, countStr) => {
-    // create file name based on uniq id and save text in there (write path and file name)
-    // exports.counterFile = path.join(__dirname, 'counter.txt');
-    // exports.dataDir = path.join(__dirname, 'data');
-    var filePath = path.join(exports.dataDir, countStr + '.txt');
-    // invoke fs.writefile (async)
-    fs.writeFile(filePath, text, (err) => {
+  counter.getNextUniqueId((err, id) => {
+    var filepath = path.join(exports.dataDir, `${id}.txt`);
+    fs.writeFile(filepath, text, (err) => {
       if (err) {
-        callback(err, null);
-        // or use ==> throw ('error writing counter');
+        callback(err);
       } else {
-        // callback
-        callback(null, {id: countStr, text});
+        callback(null, { id, text });
       }
     });
   });
-  // var id = counter.getNextUniqueId();
-  // items[id] = text;
-  // callback(null, { id, text });
 };
 
 exports.readAll = (callback) => {
   fs.readdir(exports.dataDir, (err, files) => {
     if (err) {
-      callback(err, null);
-    } else {
-      var result = [];
-      //create an array of objects like this ==> { id, text }
-      if (files.length > 0) {
-        files.forEach((file) => {
-          // console.log(files);
-          // console.log(file);
-          newFile = {
-            id: file.slice(0, -4),
-            text: file.slice(0, -4)
-          };
-          result.push(newFile);
-          // [{id, text}, {id, text}];
-        });
-      }
-      callback(null, result);
+      return callback(err);
     }
+    var data = _.map(files, (file) => {
+      var id = path.basename(file, '.txt');
+      var filepath = path.join(exports.dataDir, file);
+      return readFilePromise(filepath).then((fileData) => {
+        return { id, text: fileData.toString() };
+      });
+    });
+    Promise.all(data).then((items) => {
+      callback(null, items);
+    });
   });
 };
 
 exports.readOne = (id, callback) => {
-  var filePath = path.join(exports.dataDir, id + '.txt');
-
-  fs.readFile(filePath, 'utf-8', (err, fileData) => {
-    // console.log('this is fileData', fileData);
-    if (err) {
-      callback(err);
-    } else {
-      callback(null, {id, text: fileData});
-    }
-  });
-
-  // var text = items[id];
-  // if (!text) {
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   callback(null, { id, text });
-  // }
+  var text = items[id];
+  if (!text) {
+    callback(new Error(`No item with id: ${id}`));
+  } else {
+    callback(null, { id, text });
+  }
 };
 
 exports.update = (id, text, callback) => {
-  var filePath = path.join(exports.dataDir, id + '.txt');
-
-
-  fs.writeFile(filePath, text, (err) => {
-    if (err) {
-      callback(err);
-      // or use ==> throw ('error writing counter');
-    } else {
-      // callback
-      callback(null, {id, text});
-    }
-  });
-  // var item = items[id];
-  // if (!item) {
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   items[id] = text;
-  //   callback(null, { id, text });
-  // }
+  var item = items[id];
+  if (!item) {
+    callback(new Error(`No item with id: ${id}`));
+  } else {
+    items[id] = text;
+    callback(null, { id, text });
+  }
 };
 
 exports.delete = (id, callback) => {
